@@ -6,9 +6,9 @@ Réutilisation d'un ancien PC de bureau (Dell OptiPlex 3040) pour en faire un se
 
 ## Objectif 
 
-Elaborer un son propre cloud personnel, serveur de streaming automatiser et un apprentissage du self-hosting de linux et docker
+Élaborer mon propre cloud personnel, serveur de streaming automatisé et un apprentissage du self-hosting de Linux et Docker
 
-## Matériels utilisee 
+## Matériel utilisé 
 
 | Composant | Détail                                                 |
 | --------- | ------------------------------------------------------ |
@@ -20,8 +20,7 @@ Elaborer un son propre cloud personnel, serveur de streaming automatiser et un a
 
 ```
 Proxmox VE (hyperviseur, bare metal sur le disque 80 Go)
-  └──
-   VM OpenMediaVault (OMV)
+  └── VM OpenMediaVault (OMV)
         ├── Disque 512 Go en passthrough direct (SCSI)
         ├── Docker (via plugin OMV-Compose)
         │     ├── Nextcloud + MariaDB (cloud personnel)
@@ -35,11 +34,12 @@ Proxmox VE (hyperviseur, bare metal sur le disque 80 Go)
 ```
 
 
-## fonctionnalites 
-- serveur smb basique
-- un serveur nexcloud (car plus intuitif pour la famille que smb)
-- un serveur de telechargement 
-- un serveur multimedia automatiser ([Détails de l'automatisation média](docs/media-automation.md))
+## Fonctionnalités 
+- [serveur NAS basé sur OMV](docs/omv-setup.md)
+- [serveur smb basique](docs/omv-setup.md#partages-réseau-smbcifs) 
+- [un serveur Nextcloud](docs/nextcloud-setup.md) 
+- [un serveur de telechargement](docs/qbittorent-setup.md)
+- [un serveur multimédia automatisé](docs/media-automation.md)
 
 ## Pourquoi ces choix
 
@@ -48,15 +48,15 @@ Proxmox VE (hyperviseur, bare metal sur le disque 80 Go)
 - **Passthrough disque plutôt que disque virtuel** : accès natif SMART, pas de couche de virtualisation supplémentaire sur les données.
 - **OpenMediaVault plutôt que TrueNAS Scale** : interface plus légère, moins gourmande en RAM (TrueNAS recommande ~8 Go rien que pour lui-même), suffisant pour un usage perso sur un seul disque de données sans redondance RAID.
   
-- **ext4 plutôt que ZFS** : un seul disque de données, sans redondance possible — ZFS n'apporte pas de bénéfice réel dans cette configuration et en plus consommerais plus de performances en arriere plan.
+- **ext4 plutôt que ZFS** : un seul disque de données, sans redondance possible — ZFS n'apporte pas de bénéfice réel dans cette configuration et en plus consommerais plus de performances en arrière plan.
 
-- **Docker Compose natif OMV plutôt que Portainer** : le portaille Portainer ma ete utile dans les anciennes versions de OMV car celui ci ne disposait pas d'interface en ligne pour configurer docker (seullement le ssh) alors que avec les dernires version de OMV, on a un acces fonctionnalite de gestion de docker
+- **Docker Compose natif OMV plutôt que Portainer** : le portail Portainer m'a été utile dans les anciennes versions de OMV car celui ci ne disposait pas d'interface en ligne pour configurer docker (seulement le ssh) alors que avec les derniers version de OMV, on a un acces fonctionnalité de gestion de docker
 
-- **Hardlinks (pas Copy) entre le dossier de téléchargement et la bibliothèque média** : fonctionnalite proposer par sonarr et radarr, elle permet aux fichiers media d'etre utiliser dans leurs dossiers respectif mais aussi de rester disponible pour les seeder sur le client torrent (preservons la philosophie du torrent ;) )
+- **Hardlinks (pas Copy) entre le dossier de téléchargement et la bibliothèque média** : fonctionnalité proposer par sonarr et radarr, elle permet aux fichiers média d’être utiliser dans leurs dossiers respectif mais aussi de rester disponible pour les seeder sur le client torrent (préservons la philosophie du torrent ;) )
 
   
-- **PUID/PGID non-root pour tous les conteneurs** : ici j'ai preferer la creation d'un compte separer pour la gestion des medias  avec le minimum de privileges necessaire car 
-leur donner un acces total (root) considererer un gros risque si une faille est exploiter dans ces servises.
+- **PUID/PGID non-root pour tous les conteneurs** : ici j'ai préférer la création d'un compte séparer pour la gestion des médias  avec le minimum de privilèges nécessaire car 
+leur donner un acces total (root)serait considéré comme un gros risque si une faille est exploiter dans ces services.
 
 
 ## Problèmes rencontrés et solutions
@@ -66,7 +66,7 @@ leur donner un acces total (root) considererer un gros risque si une faille est 
 **Cause** : cache du navigateur non actualisé après l'ajout du plugin entrainant une mauvaise actuallisation des onglets de l'interface web.
 **Solution** : rechargement forcé (Ctrl+Shift+R), ou en dernier recours utiliser le redémarrage des services web.
 
-### qBittorrent — acces nom autoriser a l'interface web
+### qBittorrent — acces non autoriser a l'interface web
 **Cause** : le port interne du conteneur (`WEBUI_PORT`) ne correspondait pas au port externe utilisé pour y accéder — la protection anti-DNS-rebinding de qBittorrent rejette alors la connexion.
 **Solution** : aligner le port interne et externe dans le fichier Compose, ou modifier directement `WebUI\HostHeaderValidation=false` dans `qBittorrent.conf` si on préfère garder des ports différents.
 
@@ -82,20 +82,22 @@ leur donner un acces total (root) considererer un gros risque si une faille est 
 **Cause** : le "Minimum Custom Format Score" du profil de qualité était à 0, ce qui laissait passer des releases sans aucun tag de langue détecté (score 0 ≥ 0).
 **Solution** : remonter ce seuil à 1 pour rejeter toute release à score nul, et augmenter "Upgrade Until Custom Format Score" pour permettre les mises à niveau automatiques vers une meilleure version linguistique.
 
-### GPU passthrough pour transcodage matériel Jellyfin — abandonné
-**Analyse** : le CPU n'a qu'un seul GPU intégré (pas de GPU dédié séparé) ; un passthrough complet le retirerait entièrement à l'hôte Proxmox, empêchant toute autre VM d'en profiter à l'avenir.  
-**Décision** : rester en transcodage logiciel (CPU), suffisant pour l'usage actuel.
+### GPU passthrough pour transcodage matériel Jellyfin — tenté puis abandonné
+Voir le récit détaillé du troubleshooting dans [jellyfin-setup.md](docs/jellyfin-setup.md#transcodage-matériel-quick-sync--tenté-et-abandonné). En résumé : configuration IOMMU/VFIO correctement mise en place (GPU isolé, pilote lié à vfio-pci), mais échec persistant au démarrage de la VM (fault DMAR répété) malgré plusieurs correctifs communautaires testés. Abandon au profit d'un réencodage préventif ciblé des fichiers les plus coûteux (HEVC 10-bit/HDR).
+
 
 ## Sécurité
 
-Sera completer au fur et a mesure
+Tout les mot de passe utiliser dans la configuration ont ete generer avec Bitwaren avec un minimum de 21 characteres pour avoir plus de securite et ainsi eviter les bias humain.
 
 ## Prochaines étapes
 
 - [ ] Durcissement sécurité (mots de passe uniques par service déjà en place, à compléter avec 2FA / clés SSH)
+- [ ] mise en place d'un réencodage préventif pour améliorer la qualite de service de Jellyfin (via HandBrake)
+- [ ] amielorer la synchronisation sur Nextcloud
+- [ ] Monitoring UPS (Eaton via NUT)
 - [ ] Accès distant via Tailscale
 - [ ] Serveur mail auto-hébergé
-- [ ] Monitoring UPS (Eaton via NUT)
 
 ## Stack technique
 

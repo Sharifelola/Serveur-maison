@@ -46,7 +46,7 @@ Docker/
 ```
 
 ## Pourquoi le dossier de telechargement or de docker
-Le dossiers a ete volontairement mis or de docker car sur OMV trainne aussi un serveur de telechargement d'autres fichiers personneles.
+Le dossier a été volontairement mis hors de Docker car sur OMV fonctionne aussi un serveur de téléchargement d'autres fichiers personnels.
 
 ## Fonctionnement de Prowlarr et contournement Cloudflare
 

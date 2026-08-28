@@ -3,7 +3,7 @@
 Ce document détaille la configuration technique de ces services. Pour comprendre le flux global et le rôle de chaque brique, voir [media-automation.md](media-automation.md).
 
 
-## Rappelle de l'arborecense
+## Rappel de l'arborescence
 
 
 ```
